@@ -1,7 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
 class ReminderService {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
@@ -12,11 +11,11 @@ class ReminderService {
     await _plugin.initialize(const InitializationSettings(android: android, iOS: ios));
 
     tz.initializeTimeZones();
-    final String timezone = await FlutterNativeTimezone.getLocalTimezone();
+    // Use UTC as a safe default for scheduling if local timezone detection is unavailable.
     try {
-      tz.setLocalLocation(tz.getLocation(timezone));
-    } catch (_) {
       tz.setLocalLocation(tz.getLocation('UTC'));
+    } catch (_) {
+      // ignore
     }
   }
 
