@@ -14,6 +14,10 @@ class _ChartsScreenState extends State<ChartsScreen> {
   final _metricService = HealthMetricService();
   bool _isLoading = true;
   List<HealthMetric> _weights = [];
+  List<HealthMetric> _steps = [];
+  List<HealthMetric> _heartRates = [];
+  List<HealthMetric> _waters = [];
+  List<HealthMetric> _glucose = [];
 
   @override
   void initState() {
@@ -26,6 +30,11 @@ class _ChartsScreenState extends State<ChartsScreen> {
     final all = _metricService.getForType(MetricType.weight);
     // take last 14 entries
     _weights = all;
+    // load additional types for extra charts
+    _steps = _metricService.getForType(MetricType.steps);
+    _heartRates = _metricService.getForType(MetricType.heartRate);
+    _waters = _metricService.getForType(MetricType.water);
+    _glucose = _metricService.getForType(MetricType.glucose);
     setState(() => _isLoading = false);
   }
 
@@ -41,6 +50,14 @@ class _ChartsScreenState extends State<ChartsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildChartCard('Cân nặng (lịch sử)', _buildMetricLineChart(_weights.map((e) => MapEntry(e.timestamp, e.value ?? 0)).toList(), Colors.blue, 'kg')),
+                  const SizedBox(height: 16),
+                  _buildChartCard('Số bước (7 ngày)', _buildMetricLineChart(_steps.map((e) => MapEntry(e.timestamp, e.value ?? 0)).toList(), Colors.green, 'steps')),
+                  const SizedBox(height: 16),
+                  _buildChartCard('Nhịp tim (bpm)', _buildMetricLineChart(_heartRates.map((e) => MapEntry(e.timestamp, e.value ?? 0)).toList(), Colors.red, 'bpm')),
+                  const SizedBox(height: 16),
+                  _buildChartCard('Nước uống (ml)', _buildMetricLineChart(_waters.map((e) => MapEntry(e.timestamp, e.value ?? 0)).toList(), Colors.cyan, 'ml')),
+                  const SizedBox(height: 16),
+                  _buildChartCard('Đường huyết (mg/dL)', _buildMetricLineChart(_glucose.map((e) => MapEntry(e.timestamp, e.value ?? 0)).toList(), Colors.purple, 'mg/dL')),
                   const SizedBox(height: 16),
                 ],
               ),

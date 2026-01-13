@@ -5,28 +5,94 @@ import 'screens/profile_screen.dart';
 import 'screens/charts_screen.dart';
 import 'screens/health_input_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/debug_screen.dart';
 import 'services/health_metric_service.dart';
 import 'models/health_metric.dart';
 import 'services/reminder_service.dart';
 
+Future<void> _seedFakeData() async {
+  final service = HealthMetricService();
+  await service.initialize();
+
+  // Kiểm tra xem đã có dữ liệu chưa
+  if (service.getAll().isNotEmpty) return;
+
+  // Thêm dữ liệu mẫu
+  final now = DateTime.now();
+  final metrics = [
+    // Cân nặng - giảm dần từ 75kg xuống 70kg trong 7 ngày
+    HealthMetric(id: '1', type: MetricType.weight, value: 75.0, timestamp: now.subtract(const Duration(days: 6))),
+    HealthMetric(id: '2', type: MetricType.weight, value: 74.2, timestamp: now.subtract(const Duration(days: 5))),
+    HealthMetric(id: '3', type: MetricType.weight, value: 73.5, timestamp: now.subtract(const Duration(days: 4))),
+    HealthMetric(id: '4', type: MetricType.weight, value: 72.8, timestamp: now.subtract(const Duration(days: 3))),
+    HealthMetric(id: '5', type: MetricType.weight, value: 72.1, timestamp: now.subtract(const Duration(days: 2))),
+    HealthMetric(id: '6', type: MetricType.weight, value: 71.5, timestamp: now.subtract(const Duration(days: 1))),
+    HealthMetric(id: '7', type: MetricType.weight, value: 70.8, timestamp: now),
+
+    // Chiều cao - cố định
+    HealthMetric(id: '8', type: MetricType.height, value: 170.0, timestamp: now.subtract(const Duration(days: 30))),
+
+    // Huyết áp - dao động bình thường
+    HealthMetric(id: '9', type: MetricType.bloodPressure, systolic: 120, diastolic: 80, timestamp: now.subtract(const Duration(days: 3))),
+    HealthMetric(id: '10', type: MetricType.bloodPressure, systolic: 118, diastolic: 78, timestamp: now.subtract(const Duration(days: 1))),
+    HealthMetric(id: '11', type: MetricType.bloodPressure, systolic: 122, diastolic: 82, timestamp: now),
+
+    // Nhịp tim - 70-85 bpm
+    HealthMetric(id: '12', type: MetricType.heartRate, value: 72.0, timestamp: now.subtract(const Duration(days: 2))),
+    HealthMetric(id: '13', type: MetricType.heartRate, value: 78.0, timestamp: now.subtract(const Duration(days: 1))),
+    HealthMetric(id: '14', type: MetricType.heartRate, value: 75.0, timestamp: now),
+
+    // Số bước chân - 8000-12000 bước/ngày
+    HealthMetric(id: '15', type: MetricType.steps, value: 8500, timestamp: now.subtract(const Duration(days: 6))),
+    HealthMetric(id: '16', type: MetricType.steps, value: 9200, timestamp: now.subtract(const Duration(days: 5))),
+    HealthMetric(id: '17', type: MetricType.steps, value: 7800, timestamp: now.subtract(const Duration(days: 4))),
+    HealthMetric(id: '18', type: MetricType.steps, value: 10500, timestamp: now.subtract(const Duration(days: 3))),
+    HealthMetric(id: '19', type: MetricType.steps, value: 8800, timestamp: now.subtract(const Duration(days: 2))),
+    HealthMetric(id: '20', type: MetricType.steps, value: 9600, timestamp: now.subtract(const Duration(days: 1))),
+    HealthMetric(id: '21', type: MetricType.steps, value: 11200, timestamp: now),
+
+    // Nước uống - 1500-2000ml/ngày
+    HealthMetric(id: '22', type: MetricType.water, value: 500, timestamp: now.subtract(const Duration(hours: 8))),
+    HealthMetric(id: '23', type: MetricType.water, value: 300, timestamp: now.subtract(const Duration(hours: 6))),
+    HealthMetric(id: '24', type: MetricType.water, value: 400, timestamp: now.subtract(const Duration(hours: 4))),
+    HealthMetric(id: '25', type: MetricType.water, value: 300, timestamp: now.subtract(const Duration(hours: 2))),
+
+    // Đường huyết - 70-140 mg/dL
+    HealthMetric(id: '26', type: MetricType.glucose, value: 95.0, timestamp: now.subtract(const Duration(days: 2))),
+    HealthMetric(id: '27', type: MetricType.glucose, value: 102.0, timestamp: now.subtract(const Duration(days: 1))),
+    HealthMetric(id: '28', type: MetricType.glucose, value: 98.0, timestamp: now),
+  ];
+
+  for (final metric in metrics) {
+    await service.addMetric(metric);
+  }
+
+  // ignore: avoid_print
+  print('Debug: Seeded ${metrics.length} fake health metrics');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kDebugMode) {
-  try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+    try {
+      // Seed demo data in debug mode but do NOT clear existing preferences.
+      await _seedFakeData();
+    } catch (e) {
       // ignore: avoid_print
-      print('Debug: cleared SharedPreferences');
-  } catch (e) {
-      // ignore: avoid_print
-      print('Debug: failed to clear prefs: $e');
+      print('Debug: failed to seed fake data: $e');
+    }
   }
-  }
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  final loggedIn = prefs.getBool('logged_in') ?? false;
+  // For testing: start on debug screen to inspect prefs/metrics
+  final initialRoute = '/debug';
+  runApp(MyApp(initialRoute: initialRoute));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +105,14 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/': (context) => const HomeNavigator(),
+        '/login': (context) => const LoginScreen(),
+        '/debug': (context) => const DebugScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/charts': (context) => const ChartsScreen(),
         '/input': (context) => const HealthInputScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
-      initialRoute: '/',
+      initialRoute: initialRoute,
     );
   }
 }
